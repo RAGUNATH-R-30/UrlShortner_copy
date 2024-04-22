@@ -219,7 +219,7 @@ app.post("/shortenurl",[authenticate,permit("users")],async(req,res)=>{
     // console.log(req)
     const user = await users_collection.updateOne({email:req.body.email},{$push:{urls:{urlid:urlid,url:req.body.url,shortenurl:shortenurl,click:0}}})
     const url = await url_collections.insertOne({urlid:urlid,url:req.body.url,shortenurl:shortenurl,email:req.body.email,click:0})
-    res.json("sucess")
+    res.json({message:"sucess",shortenurl:shortenurl})
   } catch (error) {
     res.json("failed");
     res.status(500).json("SoMething went wrong");
