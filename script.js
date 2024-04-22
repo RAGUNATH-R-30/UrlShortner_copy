@@ -217,9 +217,9 @@ app.post("/shortenurl",[authenticate,permit("users")],async(req,res)=>{
     const base = "http://localhost:3000"
     const shortenurl = `${base}/${urlid}`
     // console.log(req)
-    const user = await users_collection.updateOne({email:req.body.email},{$push:{urls:{urlid:urlid,url:req.body.url,shortenurl:shortenurl}}})
-    const url = await url_collections.insertOne({urlid:urlid,url:req.body.url,shortenurl:shortenurl,email:req.body.email})
-
+    const user = await users_collection.updateOne({email:req.body.email},{$push:{urls:{urlid:urlid,url:req.body.url,shortenurl:shortenurl,click:0}}})
+    const url = await url_collections.insertOne({urlid:urlid,url:req.body.url,shortenurl:shortenurl,email:req.body.email,click:0})
+    res.json("sucess")
   } catch (error) {
     res.json("failed");
     res.status(500).json("SoMething went wrong");
@@ -234,9 +234,9 @@ app.get("/:urlid",async(req,res)=>{
     const users_collection = db.collection("users");
     const url_collections = db.collection("urls");
     const url = await url_collections.findOne({urlid:urlid})
+    const urlclik = await  url_collections.updateOne({urlid:urlid},{$inc:{click:1}})
     const originalurl = url.url
     res.redirect(originalurl)
-    // const originalurl = users_collection.findOne()
     console.log(url)
     await connection.close()
   } catch (error) {
@@ -252,9 +252,11 @@ app.get("/getuserurls/:email",async(req,res)=>{
     const db = connection.db("urlshortner");
     const users_collection = db.collection("users");
     const user = await users_collection.findOne({email:email})
+    const url_collections = db.collection("urls");
+    const allurl = await url_collections.find({email:email}).toArray()
+// console.log(allurl)
     const userurls = user.urls
-    console.log(userurls)
-    res.json(userurls)
+    res.json(allurl)
   } catch (error) {
     res.json("failed");
     res.status(500).json("SoMething went wrong");
