@@ -231,35 +231,44 @@ try {
     const email = req.body.email
     const user = await users_collection.findOne({email:req.body.email})
     console.log("user",user)
-    const urlstoday = await url_collections.aggregate([
-      {
-        '$match': {
-          'email': email
-        }
-      }, {
-        '$group': {
-          '_id': '$date', 
-          'count': {
-            '$sum': 1
+
+    const urluser = await url_collections.findOne({email:req.body.email})
+    if(urluser){
+      const urlstoday = await url_collections.aggregate([
+        {
+          '$match': {
+            'email': email
+          }
+        }, {
+          '$group': {
+            '_id': '$date', 
+            'count': {
+              '$sum': 1
+            }
           }
         }
-      }
-    ]).toArray();
+      ]).toArray();
+  
+      const month = moment().format("MM")
+        let dates = []
+        const userurlsdate= user.urls.map((item)=>{
+          dates.push(item.date)
+          console.log(item.date)
+        })
+  
+        const currentmonthdates = dates.filter((date)=>{
+          return date.slice(3,5)== month
+        })
+        console.log(currentmonthdates)
+      console.log(urlstoday)
+      res.json({user:user,count:urlstoday[0].count,monthurlcount:currentmonthdates.length})
+    }
+    else{
+      res.json({user:user,count:0,monthurlcount:0})
+    }
+    
 
-    const month = moment().format("MM")
-      let dates = []
-      const userurlsdate= user.urls.map((item)=>{
-        dates.push(item.date)
-        console.log(item.date)
-      })
-
-      const currentmonthdates = dates.filter((date)=>{
-        return date.slice(3,5)== month
-      })
-      console.log(currentmonthdates)
-    console.log(urlstoday)
-
-    res.json({user:user,count:urlstoday[0].count,monthurlcount:currentmonthdates.length})
+    
 } catch (error) {
   res.json("failed");
     res.status(500).json("SoMething went wrong");
