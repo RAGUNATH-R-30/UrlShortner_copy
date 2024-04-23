@@ -311,58 +311,8 @@ app.get("/getuserurls/:email",async(req,res)=>{
   }
 })
 
-// app.get('/urls/:email', async (req, res) => {
-//   const email = req.params.email;
 
-//   try {
-//     const connection = await MongoClient.connect(URL);
-//     const db = connection.db("urlshortener");
-//     const urlsCollection = db.collection("urls");
 
-//     // Get current date and first day of the current month
-//     const currentDate = new Date();
-//     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-//     console.log(startOfMonth)
-
-//     // Aggregate to count URLs created per day for the user
-//     const urlsPerDay = await urlsCollection.aggregate([
-//       {
-//         $match: {
-//           "email": email,
-//           "date": {
-//             $gte: startOfMonth, // Filter URLs within the current month
-//           }
-//         }
-//       },
-//       {
-//         $group: {
-//           _id: { $dayOfMonth: "$date" },
-//           total: { $sum: 1 }
-//         }
-//       },
-//       {
-//         $sort: { "_id": 1 } // Sort by day of the month
-//       }
-//     ]).toArray();
-//     console.log(urlsPerDay)
-
-//     // Count total URLs created within the month for the user
-//     const totalWithinMonth = await urlsCollection.countDocuments({
-//       "email": email,
-//       "date": {
-//         $gte: startOfMonth // Filter URLs within the current month
-//       }
-//     });
-
-//     res.json({
-//       urlsPerDay,
-//       totalWithinMonth
-//     });
-//   } catch (error) {
-//     console.error("Error:", error);
-//     res.status(500).json({ error: "Something went wrong" });
-//   }
-// });
 app.get('/urls/:email', async (req, res) => {
 const email = req.params.email;
 
@@ -489,4 +439,32 @@ app.put("/updatepassword/:email",async(req,res)=>{
       console.log(error);
       res.status(500).json("Something Went Wrong");
   }
+  })
+
+  app.post("/getmonthsurl",async(req,res)=>{
+
+    try {
+      const email = req.body.email;
+      const connection = await MongoClient.connect(URL);
+      const db = connection.db("urlshortner");
+      const collection = db.collection("users");
+      const user = await collection.findOne({ email: email });
+      const month = moment().format("MM")
+      console.log(moment().format("MM"))
+      let dates = ['25-05-2024']
+      const userurlsdate= user.urls.map((item)=>{
+        dates.push(item.date)
+        console.log(item.date)
+      })
+
+      const currentmonthdates = dates.filter((date)=>{
+        return date.slice(3,5)== month
+      })
+      console.log(currentmonthdates)
+  res.json(dates)
+    } catch (error) {
+      console.log(error);
+      res.status(500).json("Something Went Wrong");
+    }
+
   })
