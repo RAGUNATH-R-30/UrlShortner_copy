@@ -228,12 +228,13 @@ try {
     const url_collections = db.collection("urls");
     console.log("userinfo",req.body)
     console.log(req.body.email)
+    const email = req.body.email
     const user = await users_collection.findOne({email:req.body.email})
-    console.log(user)
+    console.log("user",user)
     const urlstoday = await url_collections.aggregate([
       {
         '$match': {
-          'email': 'ragunath3003@gmail.com'
+          'email': email
         }
       }, {
         '$group': {
@@ -244,8 +245,21 @@ try {
         }
       }
     ]).toArray();
-    console.log(urlstoday[0])
-    res.json({user:user,count:urlstoday[0].count})
+
+    const month = moment().format("MM")
+      let dates = []
+      const userurlsdate= user.urls.map((item)=>{
+        dates.push(item.date)
+        console.log(item.date)
+      })
+
+      const currentmonthdates = dates.filter((date)=>{
+        return date.slice(3,5)== month
+      })
+      console.log(currentmonthdates)
+    console.log(urlstoday)
+
+    res.json({user:user,count:urlstoday[0].count,monthurlcount:currentmonthdates.length})
 } catch (error) {
   res.json("failed");
     res.status(500).json("SoMething went wrong");
