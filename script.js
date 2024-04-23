@@ -7,6 +7,7 @@ const cors = require("cors");
 var bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken")
+const moment = require("moment")
 // const  nanoid = require("nanoid")
 let nanoid;
 (async () => {
@@ -224,10 +225,27 @@ try {
   const connection = await MongoClient.connect(URL)
     const db = connection.db("urlshortner");
     const users_collection = db.collection("users");
+    const url_collections = db.collection("urls");
     console.log("userinfo",req.body)
     console.log(req.body.email)
     const user = await users_collection.findOne({email:req.body.email})
-    res.json(user)
+    console.log(user)
+    const urlstoday = await url_collections.aggregate([
+      {
+        '$match': {
+          'email': 'ragunath3003@gmail.com'
+        }
+      }, {
+        '$group': {
+          '_id': '$date', 
+          'count': {
+            '$sum': 1
+          }
+        }
+      }
+    ]).toArray();
+    console.log(urlstoday[0])
+    res.json({user:user,count:urlstoday[0].count})
 } catch (error) {
   res.json("failed");
     res.status(500).json("SoMething went wrong");
@@ -245,7 +263,7 @@ app.post("/shortenurl",[authenticate,permit("users")],async(req,res)=>{
     console.log("urlid",urlid)
     const base = "http://localhost:3000"
     const shortenurl = `${base}/${urlid}`
-    const date = new Date();
+    const date = moment().format("DD-MM-YYYY");
     // console.log(req)
     const user = await users_collection.updateOne({email:req.body.email},{$push:{urls:{urlid:urlid,url:req.body.url,shortenurl:shortenurl,click:0,date:date}}})
     const url = await url_collections.insertOne({urlid:urlid,url:req.body.url,shortenurl:shortenurl,email:req.body.email,click:0,date:date})
