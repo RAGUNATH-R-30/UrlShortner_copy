@@ -41,6 +41,33 @@ const sendmail = async (mailoptions) => {
   }
 };
 
+function generateRandomString(length) {
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length);
+    result += characters.charAt(randomIndex);
+  }
+  return result;
+}
+
+//This is the function which sends email
+const sendmailotp = async(mailoptions)=>{
+  const transporter = nodemailer.createTransport({
+    service:"gmail",
+    host:"smtp.gmail.com",
+    auth:{
+      user:"ragunath3003@gmail.com",
+      pass:"wglm zmjs ahmr zmth"
+    }
+  });
+  try {
+    await transporter.sendMail(mailoptions)
+   } catch (error) {
+    console.log(error)
+   }
+  }
 function authenticate(req,res,next){
   console.log("authenticate")
   
@@ -265,3 +292,183 @@ app.get("/getuserurls/:email",async(req,res)=>{
     res.status(500).json("SoMething went wrong");
   }
 })
+
+// app.get('/urls/:email', async (req, res) => {
+//   const email = req.params.email;
+
+//   try {
+//     const connection = await MongoClient.connect(URL);
+//     const db = connection.db("urlshortener");
+//     const urlsCollection = db.collection("urls");
+
+//     // Get current date and first day of the current month
+//     const currentDate = new Date();
+//     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+//     console.log(startOfMonth)
+
+//     // Aggregate to count URLs created per day for the user
+//     const urlsPerDay = await urlsCollection.aggregate([
+//       {
+//         $match: {
+//           "email": email,
+//           "date": {
+//             $gte: startOfMonth, // Filter URLs within the current month
+//           }
+//         }
+//       },
+//       {
+//         $group: {
+//           _id: { $dayOfMonth: "$date" },
+//           total: { $sum: 1 }
+//         }
+//       },
+//       {
+//         $sort: { "_id": 1 } // Sort by day of the month
+//       }
+//     ]).toArray();
+//     console.log(urlsPerDay)
+
+//     // Count total URLs created within the month for the user
+//     const totalWithinMonth = await urlsCollection.countDocuments({
+//       "email": email,
+//       "date": {
+//         $gte: startOfMonth // Filter URLs within the current month
+//       }
+//     });
+
+//     res.json({
+//       urlsPerDay,
+//       totalWithinMonth
+//     });
+//   } catch (error) {
+//     console.error("Error:", error);
+//     res.status(500).json({ error: "Something went wrong" });
+//   }
+// });
+app.get('/urls/:email', async (req, res) => {
+const email = req.params.email;
+
+try {
+  const connection = await MongoClient.connect(URL);
+  const db = connection.db("urlshortener");
+  const urlsCollection = db.collection("urls");
+
+  // Get current date
+  const currentDate = new Date();
+  const startOfDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+  const endOfDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1);
+  console.log(startOfDay)
+  console.log(endOfDay)
+
+  // Aggregate to count URLs created today for the user
+  const urlsToday = await urlsCollection.aggregate([
+    {
+      $match: {
+        "email": email,
+        "date": {
+          $gte: startOfDay,
+          $lt: endOfDay
+        }
+      }
+    }
+  ]).toArray();
+
+  res.json({
+    urlsToday
+  });
+} catch (error) {
+  console.error("Error:", error);
+  res.status(500).json({ error: "Something went wrong" });
+}
+});
+
+
+app.get("/forgotpassword/:email", async (req, res) => {
+  try {
+    const email = req.params.email;
+    const connection = await MongoClient.connect(URL);
+    const db = connection.db("urlshortner");
+    const collection = db.collection("users");
+    const user_exists = await collection.findOne({ email: email });
+    if (user_exists) {
+      res.json("User Exists");
+    } else {
+      res.json("User Not Exists");
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json("Something Went Wrong");
+  }
+});
+
+//inserts otp to users collection
+app.put("/generateotp/:email", async (req, res) => {
+  try {
+    const email = req.params.email;
+    const connection = await MongoClient.connect(URL);
+    const db = connection.db("urlshortner");
+    const collection = db.collection("users");
+    const otp = generateRandomString(5);
+    const user_exists = await collection.updateOne(
+      { email: email },
+      { $set: { otp: otp } }
+    );
+
+    const mailoptions = {
+      from:{
+        name:'Ragunath',
+        address:"ragunath3003@gmail.com"
+      },
+      to:[email],
+      subject:"Password Reset.",
+      text:"otp",
+      html: `<p>Click <a href="http://localhost:5173/newpassword?email=${email}&otp=${otp}">here</a> to change your password.</p>`
+    }
+    await sendmailotp(mailoptions)
+    res.json("otpsent");
+  } catch (error) {
+    console.log(error);
+    res.status(500).json("Something Went Wrong");
+  }
+});
+
+//gets the otp from user collection
+app.get("/verifyotp/:email/:otp", async (req, res) => {
+  try {
+    const email = req.params.email;
+    const entered_otp = req.params.otp;
+    const connection = await MongoClient.connect(URL);
+    const db = connection.db("urlshortner");
+    const collection = db.collection("users");
+    const user = await collection.findOne({ email: email });
+    const otp = user.otp;
+    if (entered_otp == otp) {
+      res.json("verified");
+      
+    } else {
+      res.json("not verified");
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json("Something Went Wrong");
+  }
+});
+
+app.put("/updatepassword/:email",async(req,res)=>{
+  try {
+  const email = req.params.email;
+  const password =req.body.password
+  var salt = bcrypt.genSaltSync(10);
+  var hased_password = bcrypt.hashSync(password, salt);
+  const connection = await MongoClient.connect(URL);
+  const db = connection.db("urlshortner");
+  const collection = db.collection("users");
+  
+  const user = await collection.updateOne({ email: email },{$set:{password:hased_password}});
+  await collection.updateOne({ email: email },{$set:{otp:""}});
+  res.json("Password Updated Successfully")
+  } catch (error) {
+      console.log(error);
+      res.status(500).json("Something Went Wrong");
+  }
+  })
