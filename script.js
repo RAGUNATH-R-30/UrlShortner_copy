@@ -23,15 +23,15 @@ app.use(
   })
 );
 
-const URL = "mongodb+srv://ragunath3003:admin@cluster0.lmyxz0w.mongodb.net/";
+const URL = process.env.DB;
 
 const sendmail = async (mailoptions) => {
   const transporter = nodemailer.createTransport({
     service: "gmail",
     host: "smtp.gmail.com",
     auth: {
-      user: "ragunath3003@gmail.com",
-      pass: "wglm zmjs ahmr zmth",
+      user: process.env.email,
+      pass: process.env.password,
     },
   });
 
@@ -59,8 +59,8 @@ const sendmailotp = async (mailoptions) => {
     service: "gmail",
     host: "smtp.gmail.com",
     auth: {
-      user: "ragunath3003@gmail.com",
-      pass: "wglm zmjs ahmr zmth",
+      user: process.env.email,
+      pass: process.env.password,
     },
   });
   try {
