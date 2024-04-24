@@ -70,7 +70,6 @@ const sendmailotp = async (mailoptions) => {
   }
 };
 function authenticate(req, res, next) {
-  console.log("authenticate");
 
   if (!req.headers.authorization) {
     console.log("unauthorized");
@@ -87,10 +86,7 @@ function authenticate(req, res, next) {
 }
 
 function permit(module) {
-  console.log("permit");
   return (req, res, next) => {
-    // console.log(req)
-    console.log(req.method);
     const permissions = req.payload.permissions[module]; // ["GET","POST"]
     if (permissions.findIndex((p) => p == req.method) !== -1) {
       next();
@@ -107,7 +103,6 @@ app.get("/", (req, res) => {
 });
 
 app.post("/createuser", async (req, res) => {
-  // console.log(req.body);
   try {
     const connection = await MongoClient.connect(URL);
     const db = connection.db("urlshortner");
@@ -116,8 +111,6 @@ app.post("/createuser", async (req, res) => {
     const already_exist = await users_collection.findOne({
       email: req.body.email,
     });
-
-    console.log(already_exist);
 
     if (!already_exist) {
       const salt = bcrypt.genSaltSync(10);
@@ -154,13 +147,10 @@ app.post("/activateaccount", async (req, res) => {
     const connection = await MongoClient.connect(URL);
     const db = connection.db("urlshortner");
     const users_collection = db.collection("users");
-    // console.log(req.body);
     const email = req.body.email;
-    // console.log(email);
     const already_exist = await users_collection.findOne({ email: email });
     if (already_exist.status == "active") {
       res.json("already active");
-      console.log("already active");
     } else {
       if (already_exist) {
         try {
@@ -227,11 +217,8 @@ app.post("/userinfo", [authenticate, permit("users")], async (req, res) => {
     const db = connection.db("urlshortner");
     const users_collection = db.collection("users");
     const url_collections = db.collection("urls");
-    console.log("userinfo", req.body);
-    console.log(req.body.email);
     const email = req.body.email;
     const user = await users_collection.findOne({ email: req.body.email });
-    console.log("user", user);
 
     const urluser = await url_collections.findOne({ email: req.body.email });
     if (urluser) {
@@ -258,7 +245,6 @@ app.post("/userinfo", [authenticate, permit("users")], async (req, res) => {
       let dates = [];
       const userurlsdate = user.urls.map((item) => {
         dates.push(item.date);
-        console.log(item.date);
       });
 
       const currentmonthdates = dates.filter((date) => {
@@ -266,9 +252,6 @@ app.post("/userinfo", [authenticate, permit("users")], async (req, res) => {
       });
 
       const today = dates.filter((date)=>date==todaydate)
-      console.log("today",today.length)
-      console.log(currentmonthdates);
-      console.log(urlstoday);
 
       let urlstodaycount = urlstoday[0].count
       let monthurlcount = currentmonthdates.length
@@ -290,17 +273,14 @@ app.post("/userinfo", [authenticate, permit("users")], async (req, res) => {
 // [authenticate,permit],
 app.post("/shortenurl", [authenticate, permit("users")], async (req, res) => {
   try {
-    console.log("shorten");
     const connection = await MongoClient.connect(URL);
     const db = connection.db("urlshortner");
     const users_collection = db.collection("users");
     const url_collections = db.collection("urls");
     const urlid = nanoid(6);
-    console.log("urlid", urlid);
-    const base = "http://localhost:3000";
+    const base = "https://urlshortner-copy.onrender.com";
     const shortenurl = `${base}/${urlid}`;
     const date = moment().format("DD-MM-YYYY");
-    // console.log(req)
     const user = await users_collection.updateOne(
       { email: req.body.email },
       {
@@ -345,7 +325,6 @@ app.get("/:urlid", async (req, res) => {
     );
     const originalurl = url.url;
     res.redirect(originalurl);
-    console.log(url);
     await connection.close();
   } catch (error) {
     // res.json("failed");
@@ -362,7 +341,6 @@ app.get("/getuserurls/:email", async (req, res) => {
     const user = await users_collection.findOne({ email: email });
     const url_collections = db.collection("urls");
     const allurl = await url_collections.find({ email: email }).toArray();
-    // console.log(allurl)
     const userurls = user.urls;
     res.json(allurl);
     await connection.close();
@@ -392,8 +370,6 @@ app.get("/urls/:email", async (req, res) => {
       currentDate.getMonth(),
       currentDate.getDate() + 1
     );
-    console.log(startOfDay);
-    console.log(endOfDay);
 
     // Aggregate to count URLs created today for the user
     const urlsToday = await urlsCollection
@@ -524,17 +500,14 @@ app.post("/getmonthsurl", async (req, res) => {
     const collection = db.collection("users");
     const user = await collection.findOne({ email: email });
     const month = moment().format("MM");
-    console.log(moment().format("MM"));
     let dates = ["25-05-2024"];
     const userurlsdate = user.urls.map((item) => {
       dates.push(item.date);
-      console.log(item.date);
     });
 
     const currentmonthdates = dates.filter((date) => {
       return date.slice(3, 5) == month;
     });
-    console.log(currentmonthdates);
     res.json(dates);
   } catch (error) {
     console.log(error);
