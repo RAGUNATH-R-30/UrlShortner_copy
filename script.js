@@ -19,7 +19,8 @@ app.use(express.json());
 app.listen(3000);
 app.use(
   cors({
-    origin: " http://localhost:5173",
+    // origin: " http://localhost:5173",
+    origin:"https://r-shortner.netlify.app"
   })
 );
 
@@ -127,7 +128,7 @@ app.post("/createuser", async (req, res) => {
         to: [email],
         subject: "Activate Account",
         text: "Activate Account",
-        html: `<p>Click <a href="http://localhost:5173/accountactive?email=${email}">here</a> to <b>Activate your account.</b></p>`,
+        html: `<p>Click <a href="https://r-shortner.netlify.app/accountactive?email=${email}">here</a> to <b>Activate your account.</b></p>`,
       };
       await sendmail(mailoptions);
       res.json("success");
@@ -436,7 +437,7 @@ app.put("/generateotp/:email", async (req, res) => {
       to: [email],
       subject: "Password Reset.",
       text: "otp",
-      html: `<p>Click <a href="http://localhost:5173/newpassword?email=${email}&otp=${otp}">here</a> to change your password.</p>`,
+      html: `<p>Click <a href="https://r-shortner.netlify.app/newpassword?email=${email}&otp=${otp}">here</a> to change your password.</p>`,
     };
     await sendmailotp(mailoptions);
     res.json("otpsent");
